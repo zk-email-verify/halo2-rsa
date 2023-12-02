@@ -39,10 +39,10 @@ use halo2_dynamic_sha256::{AssignedHashResult, Sha256DynamicConfig};
 #[cfg(feature = "sha256")]
 pub use macros::*;
 
-#[cfg(target_arch = "wasm32")]
-mod wasm;
-#[cfg(target_arch = "wasm32")]
-pub use wasm::*;
+// #[cfg(target_arch = "wasm32")]
+// mod wasm;
+// #[cfg(target_arch = "wasm32")]
+// pub use wasm::*;
 
 /// A parameter `e` in the RSA public key that is about to be assigned.
 #[derive(Clone, Debug)]
@@ -260,8 +260,11 @@ mod test {
 
     use num_bigint::RandomBits;
     use num_traits::FromPrimitive;
-    use rand::{thread_rng, Rng};
-    use rsa::{Hash, PaddingScheme, PublicKey, PublicKeyParts, RsaPrivateKey, RsaPublicKey};
+    use rand::{rngs::OsRng, thread_rng, Rng};
+    use rsa::{
+        pkcs1v15::*, signature::SignatureEncoding, signature::Signer, traits::PaddingScheme,
+        traits::PublicKeyParts, Pkcs1v15Sign, RsaPrivateKey, RsaPublicKey,
+    };
     use sha2::{Digest, Sha256};
 
     macro_rules! impl_rsa_signature_test_circuit {
@@ -392,16 +395,15 @@ mod test {
 
                     let mut aux = biguint_config.new_context(region);
                     let ctx = &mut aux;
-                    let hashed_msg = Sha256::digest(&self.msg);
-                    let padding = PaddingScheme::PKCS1v15Sign {
-                        hash: Some(Hash::SHA2_256),
-                    };
-                    let mut sign = self
-                        .private_key
-                        .sign(padding, &hashed_msg)
-                        .expect("fail to sign a hashed message.");
-                    sign.reverse();
-                    let sign_big = BigUint::from_bytes_le(&sign);
+                    // let hashed_msg = Sha256::digest(&self.msg);
+                    // let padding = PaddingScheme::PKCS1v15Sign {
+                    //     hash: Some(Hash::SHA2_256),
+                    // };
+                    let signing_key =
+                        SigningKey::<rsa::sha2::Sha256>::new(self.private_key.clone());
+                    let sign = signing_key.sign(&self.msg).to_vec();
+                    // sign.reverse();
+                    let sign_big = BigUint::from_bytes_be(&sign);
                     let sign = config
                         .rsa_config
                         .assign_signature(ctx, RSASignature::new(Value::known(sign_big)))?;
@@ -481,14 +483,13 @@ mod test {
 
                     let mut aux = biguint_config.new_context(region);
                     let ctx = &mut aux;
-                    let hashed_msg = Sha256::digest(&self.msg);
-                    let padding = PaddingScheme::PKCS1v15Sign {
-                        hash: Some(Hash::SHA2_256),
-                    };
-                    let mut sign = self
-                        .private_key
-                        .sign(padding, &hashed_msg)
-                        .expect("fail to sign a hashed message.");
+                    // let hashed_msg = Sha256::digest(&self.msg);
+                    // let padding = PaddingScheme::PKCS1v15Sign {
+                    //     hash: Some(Hash::SHA2_256),
+                    // };
+                    let signing_key =
+                        SigningKey::<rsa::sha2::Sha256>::new(self.private_key.clone());
+                    let mut sign = signing_key.sign(&self.msg).to_vec();
                     sign.reverse();
                     let sign_big = BigUint::from_bytes_le(&sign);
                     let sign = config
@@ -571,14 +572,13 @@ mod test {
                     let mut aux = biguint_config.new_context(region);
                     let ctx = &mut aux;
                     // let hashed_msg = Sha256::digest(&self.msg);
-                    let padding = PaddingScheme::PKCS1v15Sign {
-                        hash: Some(Hash::SHA2_256),
-                    };
+                    // let padding = PaddingScheme::PKCS1v15Sign {
+                    //     hash: Some(Hash::SHA2_256),
+                    // };
                     let invalid_msg = [0; 32];
-                    let mut sign = self
-                        .private_key
-                        .sign(padding, &invalid_msg)
-                        .expect("fail to sign a hashed message.");
+                    let signing_key =
+                        SigningKey::<rsa::sha2::Sha256>::new(self.private_key.clone());
+                    let mut sign = signing_key.sign(&invalid_msg).to_vec();
                     sign.reverse();
                     let sign_big = BigUint::from_bytes_le(&sign);
                     let sign = config

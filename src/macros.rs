@@ -31,12 +31,28 @@ use std::marker::PhantomData;
 
 use halo2_base::halo2_proofs::poly::kzg::strategy::SingleStrategy;
 use rand::{thread_rng, Rng};
-use rsa::{Hash, PaddingScheme, PublicKeyParts, RsaPrivateKey, RsaPublicKey};
+use rsa::{
+    pkcs1v15::*, signature::SignatureEncoding, signature::Signer, traits::PaddingScheme,
+    traits::PublicKeyParts, Pkcs1v15Sign, RsaPrivateKey, RsaPublicKey,
+};
 use sha2::{Digest, Sha256};
 
 #[macro_export]
 macro_rules! impl_pkcs1v15_basic_circuit {
-    ($config_name:ident, $circuit_name:ident, $setup_fn_name:ident, $prove_fn_name:ident, $bits_len:expr, $msg_len:expr, $num_flex_advice:expr, $num_range_advice:expr, $sha256_lookup_bits:expr, $sha256_lookup_advice:expr, $k:expr, $sha2_chip_enabled:expr) => {
+    (
+        $config_name:ident, 
+        $circuit_name:ident, 
+        $setup_fn_name:ident, 
+        $prove_fn_name:ident, 
+        $bits_len:expr,
+        $msg_len:expr, 
+        $num_flex_advice:expr, 
+        $num_range_advice:expr, 
+        $sha256_lookup_bits:expr, 
+        $sha256_lookup_advice:expr, 
+        $k:expr, 
+        $sha2_chip_enabled:expr
+    ) => {
         #[derive(Debug, Clone)]
         struct $config_name<F: PrimeField> {
             rsa_config: RSAConfig<F>,
@@ -148,10 +164,6 @@ macro_rules! impl_pkcs1v15_basic_circuit {
 
                         let mut aux = biguint_config.new_context(region);
                         let ctx = &mut aux;
-                        let hashed_msg = Sha256::digest(&self.msg);
-                        let padding = PaddingScheme::PKCS1v15Sign {
-                            hash: Some(Hash::SHA2_256),
-                        };
                         let sign = config
                             .rsa_config
                             .assign_signature(ctx, self.signature.clone())?;
@@ -255,14 +267,9 @@ macro_rules! impl_pkcs1v15_basic_circuit {
             };
 
             // 4. Generate a pkcs1v15 signature.
-            let padding = PaddingScheme::PKCS1v15Sign {
-                hash: Some(Hash::SHA2_256),
-            };
-            let mut sign = private_key
-                .sign(padding, &hashed_msg)
-                .expect("fail to sign a hashed message.");
-            sign.reverse();
-            let sign_big = BigUint::from_bytes_le(&sign);
+            let signing_key = SigningKey::<rsa::sha2::Sha256>::new(private_key.clone());
+            let sign = signing_key.sign(&msg).to_vec();
+            let sign_big = BigUint::from_bytes_be(&sign);
             let signature = RSASignature::new(Value::known(sign_big));
 
             // 5. Construct `RSAPublicKey` from `n` of `public_key` and fixed `e`.

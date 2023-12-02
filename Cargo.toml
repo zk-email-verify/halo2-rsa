@@ -16,7 +16,7 @@ halo2-dynamic-sha256 = { git = "https://github.com/zkemail/halo2-dynamic-sha256.
 num-bigint = { version = "0.4", features = ["rand"] }
 sha2 = "0.10.6"
 rand = "0.8.5"
-rsa = { version = "0.6.1", features = ["serde"] }
+rsa = { version = "0.9.6", features = ["serde", "sha2"] }
 halo2-base = { version = "0.2.2", default-features = false, features = [
     "halo2-pse",
     "display",

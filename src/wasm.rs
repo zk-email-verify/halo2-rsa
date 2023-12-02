@@ -35,7 +35,8 @@ use halo2_base::{
     utils::{bigint_to_fe, biguint_to_fe, fe_to_biguint, modulus, PrimeField},
     AssignedValue, Context,
 };
-use halo2_dynamic_sha256::{Field, Sha256CompressionConfig, Sha256DynamicConfig};
+// use halo2_dynamic_sha256::{Field, Sha256CompressionConfig, Sha256DynamicConfig};
+use halo2_dynamic_sha256::{AssignedHashResult, Sha256DynamicConfig};
 use halo2_ecc::bigint::{
     big_is_equal, big_is_zero, big_less_than, carry_mod, mul_no_carry, negative, select, sub,
     CRTInteger, FixedCRTInteger, FixedOverflowInteger, OverflowInteger,
@@ -46,7 +47,7 @@ use rand::rngs::OsRng;
 use std::marker::PhantomData;
 
 use rand::{thread_rng, Rng};
-use rsa::{Hash, PaddingScheme, PublicKeyParts, RsaPrivateKey, RsaPublicKey};
+use rsa::{traits::PaddingScheme, traits::PublicKeyParts, RsaPrivateKey, RsaPublicKey};
 use sha2::{Digest, Sha256};
 
 use js_sys::{Array, JsString, Uint8Array};

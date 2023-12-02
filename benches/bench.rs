@@ -47,7 +47,10 @@ use rand::rngs::OsRng;
 use std::marker::PhantomData;
 
 use rand::{thread_rng, Rng};
-use rsa::{Hash, PaddingScheme, PublicKeyParts, RsaPrivateKey, RsaPublicKey};
+use rsa::{
+    pkcs1v15::*, signature::SignatureEncoding, signature::Signer, traits::PaddingScheme,
+    traits::PublicKeyParts, Pkcs1v15Sign, RsaPrivateKey, RsaPublicKey,
+};
 use sha2::{Digest, Sha256};
 use std::{
     fs::File,
